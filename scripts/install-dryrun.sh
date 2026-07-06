@@ -11,8 +11,8 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-BIN=/home/taketake/projects/kryos/kryos
-SCRIPTS=/home/taketake/projects/kryos/scripts
+BIN=${BIN:-/usr/local/bin/kryos}
+SCRIPTS=${SCRIPTS:-/usr/local/share/kryos/scripts}
 
 install -m 0755 "$BIN" /usr/local/bin/kryos
 mkdir -p /run/kryos

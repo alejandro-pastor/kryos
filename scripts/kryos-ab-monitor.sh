@@ -1,8 +1,8 @@
 #!/bin/bash
 # kryos-ab-monitor: captura states de bash y kryos dry-run cada N segundos.
-# Ejecutar como root. Output append-only a /var/log/kryos-ab.log
+# Ejecutar como root. Output append-only a LOG (default: /var/log/kryos-ab.log)
 set -e
-LOG=/var/log/kryos-ab.log
+LOG=${LOG:-/var/log/kryos-ab.log}
 INTERVAL="${INTERVAL:-10}"
 DURATION="${DURATION:-600}"
 
@@ -17,7 +17,8 @@ echo "Monitor arrancado: $DURATION segundos, intervalo ${INTERVAL}s, log=$LOG" >
 END=$(($(date +%s) + DURATION))
 while [ "$(date +%s)" -lt "$END" ]; do
     TS=$(date +%H:%M:%S)
-    BASH=$(cat /run/kraken-curve.state 2>/dev/null | tr ' ' ',')
+    BASH_STATE_PATH=${BASH_STATE_PATH:-/run/kraken-curve.state}
+    BASH=$(cat "$BASH_STATE_PATH" 2>/dev/null | tr ' ' ',')
     KRYOS=$(cat /run/kryos/dryrun.state 2>/dev/null | tr ' ' ',')
     CPU=$(cat /sys/class/hwmon/hwmon4/temp1_input 2>/dev/null)
     LIQUID=$(cat /sys/class/hwmon/hwmon5/temp1_input 2>/dev/null)

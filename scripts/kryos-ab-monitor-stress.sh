@@ -1,7 +1,7 @@
 #!/bin/bash
 # kryos-ab-monitor-stress: captura SOLO durante stress test
 set -e
-LOG=/var/log/kryos-ab-stress.log
+LOG=${LOG:-/var/log/kryos-ab-stress.log}
 DURATION="${DURATION:-280}"
 
 if [ "$EUID" -ne 0 ]; then
@@ -15,7 +15,8 @@ echo "Monitor stress arrancado: ${DURATION}s" >&2
 END=$(($(date +%s) + DURATION))
 while [ "$(date +%s)" -lt "$END" ]; do
     TS=$(date +%H:%M:%S)
-    BASH=$(cat /run/kraken-curve.state 2>/dev/null | tr ' ' ',')
+    BASH_STATE_PATH=${BASH_STATE_PATH:-/run/kraken-curve.state}
+    BASH=$(cat "$BASH_STATE_PATH" 2>/dev/null | tr ' ' ',')
     KRYOS=$(cat /run/kryos/dryrun.state 2>/dev/null | tr ' ' ',')
     CPU=$(cat /sys/class/hwmon/hwmon4/temp1_input 2>/dev/null)
     LIQUID=$(cat /sys/class/hwmon/hwmon5/temp1_input 2>/dev/null)
