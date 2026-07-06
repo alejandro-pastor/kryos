@@ -152,7 +152,12 @@ func runOnce(statePath string, dryRun, verbose bool) error {
 		cpu, liquid, prev.Pump, prev.Fan, levels.Pump, levels.Fan, pumpPct, fanPct)
 
 	if dryRun {
+		// Dry-run: imprime lo que habría hecho y guarda state (sin escribir pwm).
+		// Guardar state permite comparar trayectorias con el bash real en A/B tests.
 		fmt.Printf("dry-run: pump=%d%% fan=%d%% (pump_lvl=%d fan_lvl=%d)\n", pumpPct, fanPct, levels.Pump, levels.Fan)
+		if err := internal.Save(statePath, levels); err != nil {
+			return fmt.Errorf("guardando state dry-run: %w", err)
+		}
 		return nil
 	}
 

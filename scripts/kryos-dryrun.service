@@ -1,0 +1,12 @@
+[Unit]
+Description=KryOs dry-run A/B comparison
+Documentation=https://github.com/alejandro-pastor/kryos
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/kryos --dry-run --once --state /run/kryos/dryrun.state
+MemoryMax=64M
+PrivateNetwork=true
+NoNewPrivileges=true
+ProtectSystem=full

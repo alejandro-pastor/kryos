@@ -6,9 +6,11 @@ import (
 	"strings"
 )
 
-// DefaultStatePath es la ubicación del state file en tmpfs.
-// Lo crea systemd mediante RuntimeDirectory=kryos en el .service.
-const DefaultStatePath = "/run/kryos/curve.state"
+// DefaultStatePath es la ubicación del state file.
+// Persiste entre reboots; lo crea systemd mediante StateDirectory=kryos
+// en el .service. Decisión: se descartó /run/kryos/ porque con Type=oneshot
+// el RuntimeDirectory se borra entre ticks, rompiendo la histéresis.
+const DefaultStatePath = "/var/lib/kryos/curve.state"
 
 // Load lee el state file. Si no existe o está corrupto, devuelve {0, 0}.
 // Política del handoff: degradar a estado seguro, autorecupera en 10s.
