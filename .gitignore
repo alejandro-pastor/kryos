@@ -1,0 +1,25 @@
+# Binarios
+/kryos
+*.exe
+*.test
+*.out
+
+# Go
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Estado runtime
+/run/kryos/
+
+# Secrets
+.env
+*.key
+*.pem

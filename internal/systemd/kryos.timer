@@ -1,0 +1,12 @@
+[Unit]
+Description=KryOs timer - runs every 10 seconds
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=10s
+AccuracySec=1s
+Persistent=true
+Unit=kryos.service
+
+[Install]
+WantedBy=timers.target
