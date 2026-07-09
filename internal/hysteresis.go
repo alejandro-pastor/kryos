@@ -1,18 +1,16 @@
-// Package internal: lógica pura de KryOs.
+// Package internal: KryOs core logic.
 package internal
 
-// Umbrales validados en producción, válidos para Z53/Z63/Z73/2023/2024.
-// Decisión del usuario: opción A del handoff v2, NO ajustar.
+// Production-validated thresholds for Z53/Z63/Z73/2023/2024.
 const (
-	// Bomba: reacciona a CPU, histéresis 6°C
+	// Pump reacts to CPU temperature with 6°C hysteresis.
 	PumpCPUHysteresis = 6.0
 
-	// Fan: reacciona a líquido, histéresis 3°C
+	// Fan reacts to liquid temperature with 3°C hysteresis.
 	FanLiquidHysteresis = 3.0
 )
 
-// Arrays no pueden ser const en Go; se declaran como var.
-// thresholds[i] → nivel i+1
+// thresholds[i] triggers the transition to level i+1.
 var (
 	PumpCPUThresholds  = [3]float64{55, 70, 85}
 	FanLiquidThresholds = [3]float64{34, 38, 42}
@@ -20,13 +18,13 @@ var (
 	FanDutyByLevel     = [4]int{25, 35, 50, 70}
 )
 
-// Levels representa el estado de regulación actual.
+// Levels represents the current regulation state.
 type Levels struct {
 	Pump int
 	Fan  int
 }
 
-// Compute aplica histéresis para bomba (por CPU) y fan (por líquido).
+// Compute applies hysteresis for pump (by CPU) and fan (by liquid).
 func Compute(cpuTemp, liquidTemp float64, prev Levels) Levels {
 	return Levels{
 		Pump: computeLevel(cpuTemp, prev.Pump, PumpCPUThresholds[:], PumpCPUHysteresis),
@@ -34,14 +32,14 @@ func Compute(cpuTemp, liquidTemp float64, prev Levels) Levels {
 	}
 }
 
-// computeLevel decide el nivel con histéresis.
-// Semántica (del bash original): el estado CAMBIA UN NIVEL por tick, no salta.
-// - Si prev=0: subir si temp >= thresholds[0] (nivel 1).
-// - Si prev>0:
-//   - Subir a prev+1 si temp >= thresholds[prev] (umbral del nivel siguiente).
-//   - Si no, bajar a prev-1 si temp <= thresholds[prev-1] - hysteresis.
-//   - Si no, mantener.
-// Subir tiene prioridad sobre bajar (replica el `if/elif` del bash).
+// computeLevel decides the level with hysteresis.
+// Semantics (from the original bash): changes ONE level per tick, no jumps.
+// - If prev=0: rise if temp >= thresholds[0] (level 1).
+// - If prev>0:
+//   - Rise to prev+1 if temp >= thresholds[prev].
+//   - Otherwise fall to prev-1 if temp <= thresholds[prev-1] - hysteresis.
+//   - Otherwise stay.
+// Rise has priority over fall (matches the bash `if/elif`).
 func computeLevel(temp float64, prev int, thresholds []float64, hysteresis float64) int {
 	if prev < len(thresholds) && temp >= thresholds[prev] {
 		return prev + 1

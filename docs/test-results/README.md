@@ -1,95 +1,95 @@
 # Test results
 
-Resumen anonimizado de las pruebas realizadas durante la fase de validación
-de KryOs. No incluye logs crudos ni datos del sistema local.
+Anonymized summary of validation tests performed during KryOs development.
+Does not include raw logs or local system data.
 
-## Pruebas realizadas
+## Tests performed
 
-| # | Prueba | Resultado | Métricas clave |
-|---|--------|-----------|----------------|
-| 1 | Calibración PWM vs liquidctl (3 puntos) | ✅ 3/3 OK | diff: 3, 22, 0 RPM (margen 100) |
-| 2 | A/B en idle (bash + KryOs dry-run) | ✅ 0 divergencias | ~50 ticks, 1 transición bomba 1→0 |
-| 3 | A/B bajo carga (8 cores, 120s) | ✅ 0 divergencias | 2 transiciones bomba 1→2, 2→3 |
-| 4 | A/B cooldown (post-carga) | ✅ 0 divergencias | transición bomba 1→0 |
-| 5 | Validación post-fix state persistente | ✅ Bomba nivel 3 | pwm subió 115 → 165 → 230 |
+| # | Test | Result | Key metrics |
+|---|------|--------|-------------|
+| 1 | PWM calibration vs liquidctl (3 points) | ✅ 3/3 OK | diff: 3, 22, 0 RPM (margin 100) |
+| 2 | A/B at idle (bash + KryOs dry-run) | ✅ 0 divergences | ~50 ticks, 1 pump transition 1→0 |
+| 3 | A/B under load (8 cores, 120s) | ✅ 0 divergences | 2 pump transitions 1→2, 2→3 |
+| 4 | A/B cooldown (post-load) | ✅ 0 divergences | pump transition 1→0 |
+| 5 | Post-fix persistent state validation | ✅ Pump reached level 3 | pwm scaled 115 → 165 → 230 |
 
-## Prueba 1: Calibración
+## Test 1: Calibration
 
-Test ejecutado con el timer del bash **pausado** para evitar interferencia.
-Compara RPM del método pwm directo contra `liquidctl set pump speed N`.
+Test run with the bash timer **paused** to avoid interference.
+Compares RPM from direct PWM writes against `liquidctl set pump speed N`.
 
-| Punto | pwm directo | liquidctl | diff |
-|-------|-------------|-----------|------|
-| 35%   | 1354 RPM    | 1351 RPM  | 3    |
-| 65%   | 2090 RPM    | 2068 RPM  | 22   |
-| 90%   | 2597 RPM    | 2597 RPM  | 0    |
+| Point | Direct PWM | liquidctl | diff |
+|-------|------------|-----------|------|
+| 35%   | 1354 RPM   | 1351 RPM  | 3    |
+| 65%   | 2090 RPM   | 2068 RPM  | 22   |
+| 90%   | 2597 RPM   | 2597 RPM  | 0    |
 
-Todos los puntos dentro del margen de 100 RPM. Método pwm directo validado
-como bit-equivalente a liquidctl.
+All points within the 100 RPM margin. Direct PWM method validated as
+bit-equivalent to liquidctl.
 
-> Nota: una primera ejecución con el bash activo dio diffs > 700 RPM.
-> Causa: el timer del bash sobrescribía pwm1 entre las escrituras de KryOs
-> y las lecturas. Solución: pausar el timer durante el test.
+> Note: a first run with the bash timer active gave diffs > 700 RPM.
+> Cause: the bash timer overwrote pwm1 between KryOs writes and reads.
+> Solution: pause the bash timer during the test.
 
-## Pruebas 2-4: A/B comparativo
+## Tests 2-4: A/B comparison
 
-KryOs en modo `--dry-run` (lee hwmon, calcula, **no escribe**) en paralelo
-con el script bash que regulaba el sistema. Ambos reguladores vieron las
-mismas temperaturas y persistieron sus decisiones en archivos de state
-separados. Comparación tick a tick.
+KryOs in `--dry-run` mode (reads hwmon, computes, **does not write**)
+running in parallel with the bash script that controlled the system.
+Both controllers saw the same temperatures and persisted their decisions
+in separate state files. Tick-by-tick comparison.
 
-**Métricas globales**:
-- Ticks analizados: 100+
-- Divergencias: 0
-- Estados visitados: `{0,2}`, `{1,2}`, `{2,2}`, `{3,2}`
+**Global metrics**:
+- Ticks analyzed: 100+
+- Divergences: 0
+- States visited: `{0,2}`, `{1,2}`, `{2,2}`, `{3,2}`
 
-**Transiciones validadas**:
+**Validated transitions**:
 
-| Transición | Tick aprox. | Bash | KryOs |
+| Transition | Approx. tick | Bash | KryOs |
 |------------|-------------|------|-------|
-| Bomba 1→0 (idle) | minuto 6 | ✓ | ✓ |
-| Bomba 0→1 (subida) | minuto 1 | ✓ | ✓ |
-| Bomba 1→2 (stress) | minuto 11 | ✓ | ✓ |
-| Bomba 2→3 (stress) | minuto 13 | ✓ | ✓ |
-| Bomba 3→1 (cooldown) | minuto 17 | ✓ | ✓ |
+| Pump 1→0 (idle) | minute 6 | ✓ | ✓ |
+| Pump 0→1 (ramp up) | minute 1 | ✓ | ✓ |
+| Pump 1→2 (stress) | minute 11 | ✓ | ✓ |
+| Pump 2→3 (stress) | minute 13 | ✓ | ✓ |
+| Pump 3→1 (cooldown) | minute 17 | ✓ | ✓ |
 
-El fan alcanzó nivel 2 (líquido 38°C) pero no llegó a nivel 3 (líquido 42°C)
-durante la ventana de captura. Cobertura del 75% de las transiciones
-posibles de la matriz 4×4.
+The fan reached level 2 (liquid 38°C) but did not reach level 3
+(liquid 42°C) during the capture window. 75% transition coverage
+of the 4×4 matrix.
 
-## Prueba 5: Validación post-fix de state persistente
+## Test 5: Post-fix persistent state validation
 
-**Bug detectado**: con `RuntimeDirectory=kryos` + `Type=oneshot`, systemd
-borra el directorio entre ejecuciones. Resultado: KryOs siempre leía state
-`{0,0}` y nunca podía pasar de nivel 1, aunque la CPU superara 85°C
-(umbral nivel 3).
+**Bug found**: with `RuntimeDirectory=kryos` + `Type=oneshot`, systemd
+deletes the directory between executions. Result: KryOs always read
+state `{0,0}` and could never advance past level 1, even when CPU
+exceeded 85°C (level 3 threshold).
 
-**Evidencia pre-fix** (CPU 91.6°C, líquido 42.3°C):
-- pwm1 se mantuvo en 115 (nivel 1 = 45%) durante los 120s de stress
-- La bomba nunca subió a nivel 2 ni 3
-- El líquido alcanzó el umbral de nivel 3 en fan, pero el fan no respondió
+**Pre-fix evidence** (CPU 91.6°C, liquid 42.3°C):
+- pwm1 stayed at 115 (level 1 = 45%) during the entire 120s stress
+- The pump never reached level 2 or 3
+- Liquid hit the level 3 fan threshold, but the fan did not respond
 
-**Fix aplicado**:
-- `RuntimeDirectory=` → `StateDirectory=` (persiste entre ejecuciones)
+**Fix applied**:
+- `RuntimeDirectory=` → `StateDirectory=` (persists between runs)
 - State file: `/run/kryos/curve.state` → `/var/lib/kryos/curve.state`
 
-**Evidencia post-fix** (mismo test de stress 120s):
-- pwm1 escaló correctamente: 115 → 165 → 230
-- RPM correspondientes: 1600 → 2100 → 2600
-- Nivel 3 alcanzado a los 90s de stress (CPU ~85.5°C)
+**Post-fix evidence** (same 120s stress test):
+- pwm1 scaled correctly: 115 → 165 → 230
+- Corresponding RPM: 1600 → 2100 → 2600
+- Level 3 reached at ~90s of stress (CPU ~85.5°C)
 
-## Reproducir las pruebas
+## Reproduce the tests
 
-Los scripts de test están en `../scripts/`:
+Test scripts are in `../scripts/`:
 
-- `../scripts/kryos-ab-monitor.sh` — captura A/B en idle
-- `../scripts/kryos-ab-monitor-stress.sh` — captura A/B bajo stress
-- `../scripts/kryos-dryrun.service` — unit para KryOs en dry-run
-- `../scripts/kryos-dryrun.timer` — timer cada 10s para dry-run
+- `../scripts/kryos-ab-monitor.sh` — A/B capture at idle
+- `../scripts/kryos-ab-monitor-stress.sh` — A/B capture under load
+- `../scripts/kryos-dryrun.service` — systemd unit for dry-run KryOs
+- `../scripts/kryos-dryrun.timer` — 10s timer for dry-run
 
-Para reproducir:
-1. Compilar e instalar KryOs: `sudo install -m 0755 kryos /usr/local/bin/`
-2. Activar KryOs real: `sudo kryos --install`
-3. Activar KryOs dry-run en paralelo: `sudo cp scripts/kryos-dryrun.{service,timer} /etc/systemd/system/ && sudo systemctl enable --now kryos-dryrun.timer`
-4. Lanzar monitor: `sudo BASH_STATE_PATH=/var/lib/kryos/curve.state kryos-ab-monitor.sh 600`
-5. Comparar con `sudo kryos --get-state`
+To reproduce:
+1. Build and install KryOs: `sudo install -m 0755 kryos /usr/local/bin/`
+2. Enable KryOs: `sudo kryos --install`
+3. Enable dry-run KryOs in parallel: `sudo cp scripts/kryos-dryrun.{service,timer} /etc/systemd/system/ && sudo systemctl enable --now kryos-dryrun.timer`
+4. Run monitor: `sudo BASH_STATE_PATH=/var/lib/kryos/curve.state kryos-ab-monitor.sh 600`
+5. Compare: `sudo kryos --get-state`

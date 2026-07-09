@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-// DefaultStatePath es la ubicación del state file.
-// Persiste entre reboots; lo crea systemd mediante StateDirectory=kryos
-// en el .service. Decisión: se descartó /run/kryos/ porque con Type=oneshot
-// el RuntimeDirectory se borra entre ticks, rompiendo la histéresis.
+// DefaultStatePath is the state file location.
+// Persists across reboots via systemd StateDirectory=kryos in the .service.
+// /run/kryos/ was discarded because with Type=oneshot systemd deletes
+// RuntimeDirectory between ticks, breaking hysteresis.
 const DefaultStatePath = "/var/lib/kryos/curve.state"
 
-// Load lee el state file. Si no existe o está corrupto, devuelve {0, 0}.
-// Política del handoff: degradar a estado seguro, autorecupera en 10s.
+// Load reads the state file. If missing or corrupt, returns {0, 0}.
+// Policy: degrade to safe state, auto-recover in 10s.
 func Load(path string) (Levels, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -31,7 +31,7 @@ func Load(path string) (Levels, error) {
 	return Levels{Pump: pump, Fan: fan}, nil
 }
 
-// Save escribe el state file en formato "<pump> <fan>".
+// Save writes the state file in "<pump> <fan>" format.
 func Save(path string, levels Levels) error {
 	content := strconv.Itoa(levels.Pump) + " " + strconv.Itoa(levels.Fan) + "\n"
 	return os.WriteFile(path, []byte(content), 0644)

@@ -1,6 +1,3 @@
-// Package internal contiene la lógica pura de KryOs:
-// acceso a sysfs, histéresis, persistencia de estado y unidades systemd.
-// No expone nada fuera del binario.
 package internal
 
 import (
@@ -12,22 +9,20 @@ import (
 	"strings"
 )
 
-// Nombres de hwmon aceptados para cualquier Kraken Z3/2023/2024.
-// El driver nzxt-kraken3 expone el modelo (z53/z63/z73) en kernel 6.9-6.10
-// y "kraken3" en 6.10+. Ambos se aceptan; no necesitamos distinguir el modelo.
+// Kraken hwmon names for nzxt-kraken3 driver (kernel 6.9+).
 var krakenHwmonNames = []string{"z53", "z63", "z73", "kraken3"}
 
-// Nombres de hwmon aceptados para el sensor de CPU.
+// CPU hwmon names for AMD/Intel temperature sensors.
 var cpuHwmonNames = []string{"k10temp", "coretemp"}
 
-// Errores exportados para que los handlers CLI produzcan mensajes claros.
+// Sentinel errors for CLI handlers.
 var (
-	ErrKrakenNotFound = errors.New("ningún Kraken Z3/2023/2024 detectado en hwmon (¿cargaste el driver nzxt-kraken3?)")
-	ErrCPUNotFound    = errors.New("ningún sensor de CPU detectado (k10temp/coretemp)")
+	ErrKrakenNotFound = errors.New("no Kraken Z3/2023/2024 found in hwmon (did you load the nzxt-kraken3 driver?)")
+	ErrCPUNotFound    = errors.New("no CPU temperature sensor found (k10temp/coretemp)")
 )
 
-// findHwmonByName escanea /sys/class/hwmon/hwmon*/name y devuelve el path
-// base del primer hwmon cuyo name coincida. Devuelve "" si no hay match.
+// findHwmonByName scans /sys/class/hwmon/hwmon*/name and returns the base path
+// of the first match. Returns "" if none found.
 func findHwmonByName(name string) string {
 	matches, err := filepath.Glob("/sys/class/hwmon/hwmon*/name")
 	if err != nil {
@@ -45,8 +40,8 @@ func findHwmonByName(name string) string {
 	return ""
 }
 
-// FindKrakenSensor devuelve el path base del hwmon del Kraken y el nombre
-// real detectado (z53, z63, z73, kraken3) para reportar en --status.
+// FindKrakenSensor returns the hwmon base path and the detected name
+// (z53, z63, z73, kraken3) for --status output.
 func FindKrakenSensor() (basePath, detectedName string, err error) {
 	for _, name := range krakenHwmonNames {
 		if path := findHwmonByName(name); path != "" {
@@ -56,7 +51,7 @@ func FindKrakenSensor() (basePath, detectedName string, err error) {
 	return "", "", ErrKrakenNotFound
 }
 
-// FindCPUSensor devuelve el path base del hwmon del sensor de CPU.
+// FindCPUSensor returns the hwmon base path for the CPU temperature sensor.
 func FindCPUSensor() (string, error) {
 	for _, name := range cpuHwmonNames {
 		if path := findHwmonByName(name); path != "" {
@@ -66,9 +61,9 @@ func FindCPUSensor() (string, error) {
 	return "", ErrCPUNotFound
 }
 
-// ReadTemp lee un atributo de temperatura y devuelve el valor en grados Celsius.
-// attr suele ser "temp1_input". Algunos k10temp exponen temp2_input (Tccd1)
-// y temp3_input (Tccd2); pasar el attr correspondiente en cada caso.
+// ReadTemp reads a temperature attribute and returns the value in Celsius.
+// attr is typically "temp1_input". Some k10temp expose temp2_input (Tccd1)
+// and temp3_input (Tccd2); pass the appropriate attr for each case.
 func ReadTemp(path, attr string) (float64, error) {
 	data, err := os.ReadFile(filepath.Join(path, attr))
 	if err != nil {
@@ -76,12 +71,12 @@ func ReadTemp(path, attr string) (float64, error) {
 	}
 	raw, err := strconv.Atoi(strings.TrimSpace(string(data)))
 	if err != nil {
-		return 0, fmt.Errorf("parseando %s: %w", attr, err)
+		return 0, fmt.Errorf("parsing %s: %w", attr, err)
 	}
 	return float64(raw) / 1000.0, nil
 }
 
-// ReadRPM lee fan1_input o fan2_input y devuelve las revoluciones por minuto.
+// ReadRPM reads fan1_input or fan2_input and returns RPM.
 func ReadRPM(path, fan string) (int, error) {
 	data, err := os.ReadFile(filepath.Join(path, fan))
 	if err != nil {
@@ -89,13 +84,12 @@ func ReadRPM(path, fan string) (int, error) {
 	}
 	rpm, err := strconv.Atoi(strings.TrimSpace(string(data)))
 	if err != nil {
-		return 0, fmt.Errorf("parseando %s: %w", fan, err)
+		return 0, fmt.Errorf("parsing %s: %w", fan, err)
 	}
 	return rpm, nil
 }
 
-// ReadPWM devuelve el valor raw 0-255 de pwm1 o pwm2.
-// Usar cuando necesitas el valor exacto (ej: restauración bit-exacta en --calibrate).
+// ReadPWM returns the raw 0-255 value from pwm1 or pwm2.
 func ReadPWM(path, pwm string) (int, error) {
 	data, err := os.ReadFile(filepath.Join(path, pwm))
 	if err != nil {
@@ -103,13 +97,12 @@ func ReadPWM(path, pwm string) (int, error) {
 	}
 	val, err := strconv.Atoi(strings.TrimSpace(string(data)))
 	if err != nil {
-		return 0, fmt.Errorf("parseando %s: %w", pwm, err)
+		return 0, fmt.Errorf("parsing %s: %w", pwm, err)
 	}
 	return val, nil
 }
 
-// ReadPWMPercent devuelve el duty cycle como porcentaje 0-100.
-// Cálculo: (raw * 100) / 255. Usar cuando quieres mostrar al usuario.
+// ReadPWMPercent returns the duty cycle as 0-100 percentage.
 func ReadPWMPercent(path, pwm string) (int, error) {
 	raw, err := ReadPWM(path, pwm)
 	if err != nil {
@@ -118,7 +111,7 @@ func ReadPWMPercent(path, pwm string) (int, error) {
 	return (raw * 100) / 255, nil
 }
 
-// ReadPWMEnable lee pwm1_enable o pwm2_enable: 0=off, 1=manual, 2=curve.
+// ReadPWMEnable reads pwm1_enable or pwm2_enable: 0=off, 1=manual, 2=curve.
 func ReadPWMEnable(path, pwm string) (int, error) {
 	attr := pwm + "_enable"
 	data, err := os.ReadFile(filepath.Join(path, attr))
@@ -127,29 +120,24 @@ func ReadPWMEnable(path, pwm string) (int, error) {
 	}
 	val, err := strconv.Atoi(strings.TrimSpace(string(data)))
 	if err != nil {
-		return 0, fmt.Errorf("parseando %s: %w", attr, err)
+		return 0, fmt.Errorf("parsing %s: %w", attr, err)
 	}
 	return val, nil
 }
 
-// WritePWM escribe un duty cycle como porcentaje 0-100 usando truncamiento
-// (no redondeo). Para percent=90 da 229 (90*255/100), NO 230.
-// Esto es deliberado: replica la operación `duty * 255 // 100` de liquidctl
-// (línea 282 de kraken3.py), garantizando paridad bit-exacta con el bash
-// actual. Para los valores del plan (25/35/45/50/65/70/90) los resultados
-// coinciden: 63, 89, 114, 127, 165, 178, 229.
+// WritePWM writes a 0-100 percentage duty cycle using truncation (not rounding).
+// This matches liquidctl's `duty * 255 // 100` for bit-exact parity.
 func WritePWM(path, pwm string, percent int) error {
 	pwmDuty := (percent * 255) / 100
 	return os.WriteFile(filepath.Join(path, pwm), []byte(strconv.Itoa(pwmDuty)), 0644)
 }
 
-// WritePWMRaw escribe un valor raw 0-255 directo.
-// Usar cuando necesitas restaurar un valor exacto leído con ReadPWM.
+// WritePWMRaw writes a raw 0-255 value directly.
 func WritePWMRaw(path, pwm string, raw int) error {
 	return os.WriteFile(filepath.Join(path, pwm), []byte(strconv.Itoa(raw)), 0644)
 }
 
-// SetMode escribe pwm1_enable o pwm2_enable: 0=off, 1=manual, 2=curve.
+// SetMode writes pwm1_enable or pwm2_enable: 0=off, 1=manual, 2=curve.
 func SetMode(path, pwm string, mode int) error {
 	return os.WriteFile(filepath.Join(path, pwm+"_enable"), []byte(strconv.Itoa(mode)), 0644)
 }

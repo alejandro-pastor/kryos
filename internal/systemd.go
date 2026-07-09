@@ -1,10 +1,10 @@
-// Package internal: lógica pura de KryOs.
+// Package internal: KryOs core logic.
 package internal
 
 import "embed"
 
-// SystemdFS expone las unidades systemd embebidas (kryos.service, kryos.timer)
-// para que el handler --install pueda extraerlas a /etc/systemd/system/.
+// SystemdFS exposes the embedded systemd unit files (kryos.service, kryos.timer)
+// so the --install handler can extract them to /etc/systemd/system/.
 //
 //go:embed systemd/*
 var SystemdFS embed.FS
