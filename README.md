@@ -72,6 +72,7 @@ The arrow (▶) marks the current duty level.
 | `kryos --install` | Install and enable systemd service + timer |
 | `kryos --uninstall` | Stop and remove systemd units |
 | `kryos --version` | Print version and commit hash |
+| `kryos --print-aliases` | Print the kryos() shell function for ~/.bashrc |
 | `kryos --help` | Show available flags |
 
 ## Aliases (optional)
@@ -115,6 +116,16 @@ kryos state        # machine-parseable output
 kryos help         # show commands
 kryos --set-pump 60  # regular flags still work
 ```
+
+To add the function to your shell without copying from this README:
+
+```bash
+kryos --print-aliases >> ~/.bashrc
+source ~/.bashrc
+```
+
+This does not modify any files — it only prints to stdout. You decide
+whether to redirect it to your shell configuration.
 
 Note: `--install` does not modify your bash configuration. Aliases are
 entirely opt-in.

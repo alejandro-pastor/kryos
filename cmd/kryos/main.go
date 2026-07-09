@@ -31,6 +31,7 @@ var (
 	flagVerbose    = flag.Bool("verbose", false, "")
 	flagShowVer    = flag.Bool("version", false, "print version and commit hash")
 	flagShowHelp   = flag.Bool("help", false, "show this help")
+	flagPrintAliases = flag.Bool("print-aliases", false, "print the kryos() shell function for ~/.bashrc")
 )
 
 func init() {
@@ -71,6 +72,8 @@ func main() {
 		exitOnErr(runInstall())
 	case *flagUninstall:
 		exitOnErr(runUninstall())
+	case *flagPrintAliases:
+		runPrintAliases()
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -90,6 +93,39 @@ func verboseLog(verbose bool, format string, args ...any) {
 		fmt.Fprintf(os.Stderr, format+"\n", args...)
 	}
 }
+
+// runPrintAliases prints the kryos() shell function for ~/.bashrc.
+func runPrintAliases() {
+	fmt.Print(aliasesScript)
+}
+
+const aliasesScript = `# KryOs - NZXT Kraken controller
+kryos() {
+  case "$1" in
+    status) sudo /usr/local/bin/kryos --status ;;
+    logs)   sudo journalctl -u kryos.service -n 15 --no-pager ;;
+    watch)  watch -n 10 sudo /usr/local/bin/kryos --status ;;
+    test)   sudo /usr/local/bin/kryos-test ;;
+    state)  sudo /usr/local/bin/kryos --get-state ;;
+    freq)   watch -n 1 "grep MHz /proc/cpuinfo" ;;
+    help)
+      echo "Usage: kryos <command>"
+      echo
+      echo "Commands:"
+      echo "  status   Show current CPU/liquid temp, RPM and duty levels"
+      echo "  logs     Show last 15 log lines from the systemd service"
+      echo "  watch    Live monitor, updates every 10s (Ctrl+C to stop)"
+      echo "  test     Run 5-minute CPU stress test with monitoring"
+      echo "  state    Print machine-parseable output (pump_lvl fan_lvl cpu liquid)"
+      echo "  freq     Show CPU core frequencies in real time (updates every 1s)"
+      echo "  help     Show this help"
+      echo
+      echo "Flags: use kryos --help for binary flags (--set-pump, --set-fan, etc.)"
+      ;;
+    *) sudo /usr/local/bin/kryos "$@" ;;
+  esac
+}
+`
 
 // buildBar generates a visual bar for the current level, e.g. [35%|45%|▶65%|90%].
 func buildBar(duties []int, current int) string {
@@ -291,17 +327,13 @@ func runInstall() error {
 		}
 	}
 
-	// Install the stress test script
-	names := []string{"kryos-stress-test.sh"}
-	for _, name := range names {
-		data, err := internal.ScriptsFS.ReadFile("scripts/" + name)
-		if err != nil {
-			return fmt.Errorf("reading embedded %s: %w", name, err)
-		}
-		dest := "/usr/local/bin/" + name
-		if err := os.WriteFile(dest, data, 0755); err != nil {
-			return fmt.Errorf("writing %s: %w", dest, err)
-		}
+	// Install the stress test script (shorter name for terminal use)
+	data, err := internal.ScriptsFS.ReadFile("scripts/kryos-stress-test.sh")
+	if err != nil {
+		return fmt.Errorf("reading embedded test script: %w", err)
+	}
+	if err := os.WriteFile("/usr/local/bin/kryos-test", data, 0755); err != nil {
+		return fmt.Errorf("writing kryos-test: %w", err)
 	}
 
 	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
@@ -336,7 +368,7 @@ func runUninstall() error {
 		}
 	}
 	// Remove the installed stress test script (non-fatal if absent)
-	_ = os.Remove("/usr/local/bin/kryos-stress-test.sh")
+	_ = os.Remove("/usr/local/bin/kryos-test")
 
 	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
 		return fmt.Errorf("systemctl daemon-reload: %w", err)
