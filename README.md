@@ -1,6 +1,11 @@
 # KryOs
 
-Lightweight fan/pump control for NZXT Kraken Z3/2023/2024 on Linux.
+> Lightweight fan/pump control for NZXT Kraken Z3/2023/2024 on Linux.
+
+![CI](https://github.com/alejandro-pastor/kryos/actions/workflows/ci.yml/badge.svg)
+![Go](https://img.shields.io/badge/Go-1.26-blue)
+![License](https://img.shields.io/badge/license-GPL--3.0-green)
+![Release](https://img.shields.io/github/v/release/alejandro-pastor/kryos)
 
 ## What it does
 
@@ -54,8 +59,8 @@ Liquid: 35.9°C
 Pump:   1342 RPM @ 34%
 Fan:    1129 RPM @ 50%
 
-Pump [▶35%|45%|65%|90%]
-Fan  [25%|35%|▶50%|70%]
+Pump [▶35%|45%|65%|90%|100%]
+Fan  [25%|35%|▶50%|70%|100%]
 ```
 
 The arrow (▶) marks the current duty level.
@@ -194,6 +199,17 @@ critical threshold (59°C).
 | Emergency threshold | 51 | °C liquid |
 | Emergency hysteresis | 5 | °C |
 
+## Technical decisions
+
+| Need | Chosen | Alternative | Why |
+|------|--------|-------------|-----|
+| Execution every 10s | **systemd timer** | Continuous daemon | Zero RAM between ticks, systemd handles failures and logging |
+| State persistence | **StateDirectory** | RuntimeDirectory | RuntimeDirectory is deleted between oneshot ticks (confirmed and fixed bug) |
+| Curve configuration | **Hardcoded** (v1) | TOML config file | Simplicity first; configurable thresholds planned for v0.2.0 |
+| PWM write method | **Direct sysfs** | liquidctl CLI | Zero external dependencies, bit-exact parity with liquidctl |
+| Safety net | **Driver curve (59°C)** | Software monitoring | Kernel driver already forces 100% at critical temperature |
+| Emergency layer | **51°C liquid threshold** | — | Additional safety 8°C below kernel's critical point |
+
 ## Memory comparison
 
 | Solution | Peak RAM | Resident (between ticks) |
@@ -216,11 +232,30 @@ Scripts in `scripts/` are intended for development and testing:
 | `kryos-ab-monitor-stress.sh` | A/B comparison under CPU load |
 | `install-dryrun.sh` | Install dry-run systemd units for A/B testing |
 
+## Project status
+
+| Feature | Status |
+|---------|--------|
+| Pump curve by CPU temperature | ✅ Done |
+| Fan curve by liquid temperature | ✅ Done |
+| Hysteresis (one level per tick) | ✅ Done |
+| systemd timer installation (`--install`) | ✅ Done |
+| Visual bar in `--status` | ✅ Done |
+| Stress test script (`kryos test`) | ✅ Done |
+| `--print-aliases` for bashrc setup | ✅ Done |
+| Emergency level (51°C liquid, both to 100%) | ✅ Done |
+| Configurable thresholds | 🔜 Planned (v0.2.0) |
+| GPU temperature support | 💡 Idea |
+
 ## Credits
 
 - Built on top of the in-kernel `nzxt-kraken3` driver (Aleksa Savic, Jonas Malaco, GPL-2.0)
 - Protocol reverse-engineering from [liquidctl](https://github.com/liquidctl/liquidctl) (Jonas Malaco and contributors, GPL-3.0)
 - Inspired by the philosophy of [suckless](https://suckless.org/) and the simplicity of [fan2go](https://github.com/markasoftware/fan2go)
+
+## Author
+
+**Alejandro Pastor** — [github.com/alejandro-pastor](https://github.com/alejandro-pastor)
 
 ## License
 
