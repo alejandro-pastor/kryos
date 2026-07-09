@@ -291,6 +291,19 @@ func runInstall() error {
 		}
 	}
 
+	// Install the stress test script
+	names := []string{"kryos-stress-test.sh"}
+	for _, name := range names {
+		data, err := internal.ScriptsFS.ReadFile("scripts/" + name)
+		if err != nil {
+			return fmt.Errorf("reading embedded %s: %w", name, err)
+		}
+		dest := "/usr/local/bin/" + name
+		if err := os.WriteFile(dest, data, 0755); err != nil {
+			return fmt.Errorf("writing %s: %w", dest, err)
+		}
+	}
+
 	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
 		return fmt.Errorf("systemctl daemon-reload: %w", err)
 	}
@@ -322,6 +335,9 @@ func runUninstall() error {
 			return fmt.Errorf("removing %s: %w", dest, err)
 		}
 	}
+	// Remove the installed stress test script (non-fatal if absent)
+	_ = os.Remove("/usr/local/bin/kryos-stress-test.sh")
+
 	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
 		return fmt.Errorf("systemctl daemon-reload: %w", err)
 	}

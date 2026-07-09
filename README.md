@@ -84,9 +84,22 @@ kryos() {
     status) sudo /usr/local/bin/kryos --status ;;
     logs)   sudo journalctl -u kryos.service -n 15 --no-pager ;;
     watch)  watch -n 10 sudo /usr/local/bin/kryos --status ;;
-    test)   /usr/local/bin/scripts/kryos-stress-test.sh ;;
+    test)   sudo /usr/local/bin/kryos-stress-test.sh ;;
     state)  sudo /usr/local/bin/kryos --get-state ;;
-    *)      sudo /usr/local/bin/kryos "$@" ;;
+    help)
+      echo "Usage: kryos <command>"
+      echo
+      echo "Commands:"
+      echo "  status   Show current CPU/liquid temp, RPM and duty levels"
+      echo "  logs     Show last 15 log lines from the systemd service"
+      echo "  watch    Live monitor, updates every 10s (Ctrl+C to stop)"
+      echo "  test     Run 5-minute CPU stress test with monitoring"
+      echo "  state    Print machine-parseable output (pump_lvl fan_lvl cpu liquid)"
+      echo "  help     Show this help"
+      echo
+      echo "Flags: use kryos --help for binary flags (--set-pump, --set-fan, etc.)"
+      ;;
+    *) sudo /usr/local/bin/kryos "$@" ;;
   esac
 }
 ```
@@ -99,6 +112,7 @@ kryos watch        # live monitor every 10s
 kryos logs         # last 15 log lines
 kryos test         # run 5min CPU stress test
 kryos state        # machine-parseable output
+kryos help         # show commands
 kryos --set-pump 60  # regular flags still work
 ```
 
@@ -107,8 +121,17 @@ entirely opt-in.
 
 ## Run a stress test
 
+If you installed KryOs with `--install`, the stress test script is already
+at `/usr/local/bin/kryos-stress-test.sh`. With the alias function above:
+
 ```bash
-sudo scripts/kryos-stress-test.sh
+kryos test
+```
+
+Or run it directly:
+
+```bash
+sudo kryos-test
 ```
 
 This runs `stress-ng` for 5 minutes while monitoring KryOs every 10s.
