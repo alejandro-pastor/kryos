@@ -177,14 +177,22 @@ This binary:
 The hysteresis algorithm moves **one level per tick** (no jumps) with
 rise priority over fall, matching the original bash implementation.
 
+If liquid temperature reaches **51°C**, both pump and fan are forced to
+**100%** regardless of the normal curve (level 4, emergency). Normal
+regulation resumes when liquid drops below **46°C** (5°C hysteresis).
+This is an additional safety layer below the kernel driver's internal
+critical threshold (59°C).
+
 | Parameter | Value | Unit |
 |-----------|-------|------|
 | Pump CPU thresholds | 55 / 70 / 85 | °C |
-| Pump levels | 35 / 45 / 65 / 90 | % duty |
+| Pump levels | 35 / 45 / 65 / 90 / 100 | % duty |
 | Pump hysteresis | 6 | °C |
 | Fan liquid thresholds | 34 / 38 / 42 | °C |
-| Fan levels | 25 / 35 / 50 / 70 | % duty |
+| Fan levels | 25 / 35 / 50 / 70 / 100 | % duty |
 | Fan hysteresis | 3 | °C |
+| Emergency threshold | 51 | °C liquid |
+| Emergency hysteresis | 5 | °C |
 
 ## Memory comparison
 

@@ -170,3 +170,41 @@ func TestCompute_LiquidSpike(t *testing.T) {
 		prev = result
 	}
 }
+
+// TestCompute_Emergency validates the liquid temperature emergency level.
+// Emergency activates at liquid >= 51°C (both pump and fan forced to 100%).
+// Hysteresis: deactivates at liquid < 46°C (51-5).
+func TestCompute_Emergency(t *testing.T) {
+	tests := []struct {
+		name               string
+		cpu, liquid        float64
+		prev               Levels
+		expected           Levels
+	}{
+		// Normal regulation: liquid under 51°C, not in emergency.
+		{"normal at 50C liquid from 1/1", 60.0, 50.0, Levels{1, 1}, Levels{1, 2}},
+		{"normal at 46C liquid from 1/1", 60.0, 46.0, Levels{1, 1}, Levels{1, 2}},
+		// Emergency activates at 51°C+.
+		{"activates at 51C", 60.0, 51.0, Levels{1, 1}, Levels{4, 4}},
+		{"activates at 55C", 60.0, 55.0, Levels{1, 1}, Levels{4, 4}},
+		{"activates from level 0", 50.0, 51.0, Levels{0, 0}, Levels{4, 4}},
+		// Emergency hysteresis: stays in emergency until liquid < 46°C.
+		{"stays at 50C from 4/4", 60.0, 50.0, Levels{4, 4}, Levels{4, 4}},
+		{"stays at 47C from 4/4", 60.0, 47.0, Levels{4, 4}, Levels{4, 4}},
+		{"stays at 46C from 4/4", 60.0, 46.0, Levels{4, 4}, Levels{4, 4}},
+		// Exits emergency at 45°C (below 46°C).
+		// From prev=4/4: caps at 3/3, computeLevel decides next level.
+		{"exits at 45C CPU=80", 80.0, 45.0, Levels{4, 4}, Levels{3, 3}},
+		{"exits at 40C CPU=60", 60.0, 40.0, Levels{4, 4}, Levels{2, 3}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Compute(tt.cpu, tt.liquid, tt.prev)
+			if result != tt.expected {
+				t.Errorf("Compute(%.1f, %.1f, %+v) = %+v, want %+v",
+					tt.cpu, tt.liquid, tt.prev, result, tt.expected)
+			}
+		})
+	}
+}
