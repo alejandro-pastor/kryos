@@ -371,8 +371,8 @@ func runInstall() error {
 	if err := exec.Command("systemctl", "enable", "kryos.timer").Run(); err != nil {
 		return fmt.Errorf("systemctl enable: %w", err)
 	}
-	if err := exec.Command("systemctl", "start", "kryos.timer").Run(); err != nil {
-		return fmt.Errorf("systemctl start: %w", err)
+	if err := exec.Command("systemctl", "restart", "kryos.timer").Run(); err != nil {
+		return fmt.Errorf("systemctl restart: %w", err)
 	}
 	return nil
 }
