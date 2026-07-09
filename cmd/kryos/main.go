@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/alejandro-pastor/kryos/internal"
@@ -82,6 +83,19 @@ func verboseLog(verbose bool, format string, args ...any) {
 	}
 }
 
+// buildBar genera una barra visual del nivel actual, ej: [35%|45%|▶65%|90%].
+func buildBar(duties []int, current int) string {
+	parts := make([]string, len(duties))
+	for i, d := range duties {
+		if i == current {
+			parts[i] = fmt.Sprintf("▶%d%%", d)
+		} else {
+			parts[i] = fmt.Sprintf("%d%%", d)
+		}
+	}
+	return "[" + strings.Join(parts, "|") + "]"
+}
+
 // runStatus detecta hwmon, lee temperaturas y RPM, imprime estado legible.
 func runStatus(statePath string, verbose bool) error {
 	krakenPath, krakenName, err := internal.FindKrakenSensor()
@@ -108,12 +122,15 @@ func runStatus(statePath string, verbose bool) error {
 
 	prev, _ := internal.Load(statePath)
 
+	fmt.Printf("KryOs %s (%s)\n", version, commit)
 	fmt.Printf("Kraken: %s en %s\n", krakenName, krakenPath)
 	fmt.Printf("CPU:    %.1f°C (sensor en %s)\n", cpu, cpuPath)
 	fmt.Printf("Liquid: %.1f°C\n", liquid)
 	fmt.Printf("Pump:   %d RPM @ %d%%\n", pumpRPM, pumpPct)
 	fmt.Printf("Fan:    %d RPM @ %d%%\n", fanRPM, fanPct)
-	fmt.Printf("State:  pump_lvl=%d fan_lvl=%d\n", prev.Pump, prev.Fan)
+	fmt.Println()
+	fmt.Printf("Pump %s\n", buildBar(internal.PumpDutyByLevel[:], prev.Pump))
+	fmt.Printf("Fan  %s\n", buildBar(internal.FanDutyByLevel[:], prev.Fan))
 	verboseLog(verbose, "thresholds: pump CPU %v / fan liquid %v", internal.PumpCPUThresholds, internal.FanLiquidThresholds)
 	return nil
 }
