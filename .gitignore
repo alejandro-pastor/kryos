@@ -23,3 +23,6 @@ Thumbs.db
 .env
 *.key
 *.pem
+
+# OpenCode config (local paths, do not share)
+.opencode/
