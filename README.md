@@ -14,6 +14,60 @@ fills the gap by reading CPU and liquid temperatures from sysfs hwmon and
 writing PWM duty cycles with hysteresis. Peak RAM: ~2 MB. No daemon. No
 telemetry. No external dependencies.
 
+## Story
+
+KryOs was born from the idea of being able to control my NZXT Kraken liquid
+cooling system, since Linux doesn't have its own official software like Windows
+does. I looked into existing options, but they did more than I wanted and ran
+as background daemons, constantly hogging resources. So, I decided to create
+a Bash script to automate and command the cooling system to adjust both the
+pump and the fan.
+
+At first, I got it to consume 20 megabytes every 5 seconds. But then I
+realized that, since it's a liquid loop, there's no need to constantly poll
+it because, well, it uses resources. It was minimal — 100 milliseconds every
+5 seconds. Even so, I increased the interval to 10 seconds, which cut the
+total number of requests in half (pure math). Yet, it still hit a peak RAM
+usage of 23 MB, which felt like too much for me. So, I decided to rewrite it
+in Go to make it much lighter.
+
+After a series of improvements, a lot of trial and error, and plenty of
+testing, I managed to bring the peak RAM usage down to just 2 megabytes every
+10 seconds. On top of that, it is only active for 10 milliseconds, down from
+the previous 100 milliseconds. Honestly, this wasn't strictly necessary; it
+was just a really fun experiment. But if you're like me and obsessed with
+keeping resource consumption as low as possible, this project might be a great
+fit for you — as long as your cooling system is supported and you're running
+Linux, of course, since Linux is the whole reason I built this.
+
+I should also mention that the official app averages between 200 and 600 MB of
+continuous RAM usage. For me, this is a massive improvement, and I feel it
+reduces the overall overhead of the cooling system even further. In the end,
+between those 10-second intervals, resource consumption is zero. Only during
+that 10-millisecond window will it use a mere 2 megabytes on one of your CPU
+cores.
+
+If you're like me and get a bit paranoid about sketchy commands or weird stuff
+running on your system, don't worry: **zero dependencies**, 100% local. It
+doesn't send any data anywhere outside your machine, nobody is going to steal
+your information, and it is completely safe and secure. You can verify this
+yourself:
+
+```bash
+# 1. No external dependencies (zero network libraries)
+go list -m all
+
+# 2. No network imports in the codebase
+go list -f '{{.Imports}}' ./cmd/kryos
+
+# 3. All I/O is local (sysfs sensors + state files)
+grep -rn "ReadFile\|WriteFile" --include="*.go" . | grep -v "_test"
+```
+
+Honestly, I'm thrilled with how it turned out, and I hope you like it. If you
+run into any issues, please let me know, and I'll try to fix them. Thank you
+very much!
+
 ## Supported devices
 
 | Model | PID | Radiator | Status |
