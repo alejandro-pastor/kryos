@@ -99,7 +99,16 @@ func runPrintAliases() {
 	fmt.Print(aliasesScript)
 }
 
-const aliasesScript = `# KryOs - NZXT Kraken controller
+const aliasesScript = `# === KryOs shell function ===
+# Add this to your ~/.bashrc by running:
+#   kryos --print-aliases >> ~/.bashrc
+# Then reload with:
+#   source ~/.bashrc
+#
+# Or manually copy this block into your shell configuration.
+# ============================
+
+# KryOs - NZXT Kraken controller
 kryos() {
   case "$1" in
     status) sudo /usr/local/bin/kryos --status ;;
