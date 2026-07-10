@@ -13,3 +13,6 @@ MemoryMax=64M
 PrivateNetwork=true
 NoNewPrivileges=true
 ProtectSystem=full
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+SystemCallArchitectures=native

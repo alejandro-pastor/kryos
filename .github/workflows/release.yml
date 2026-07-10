@@ -16,11 +16,11 @@ jobs:
           go-version: '1.26'
       - name: Build
         env:
-          VERSION: ${GITHUB_REF_NAME#v}
-          COMMIT: ${GITHUB_SHA::7}
+          VERSION: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
         run: |
           CGO_ENABLED=0 go build \
-            -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
+            -ldflags="-s -w -X main.version=${VERSION#v} -X main.commit=${COMMIT:0:7}" \
             -o kryos ./cmd/kryos
           chmod +x kryos
       - name: Create Release
