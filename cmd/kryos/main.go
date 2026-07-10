@@ -346,7 +346,7 @@ func runInstall() error {
 	if err != nil {
 		return fmt.Errorf("reading embedded test script: %w", err)
 	}
-	if err := os.WriteFile("/usr/local/bin/kryos-test", data, 0755); err != nil {
+	if err := os.WriteFile("/usr/local/bin/kryos-test", data, 0750); err != nil {
 		return fmt.Errorf("writing kryos-test: %w", err)
 	}
 

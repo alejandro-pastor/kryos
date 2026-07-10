@@ -39,5 +39,5 @@ func Load(path string) (Levels, error) {
 // Save writes the state file in "<pump> <fan>" format.
 func Save(path string, levels Levels) error {
 	content := strconv.Itoa(levels.Pump) + " " + strconv.Itoa(levels.Fan) + "\n"
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0640)
 }
