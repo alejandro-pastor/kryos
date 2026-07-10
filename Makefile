@@ -18,4 +18,12 @@ tidy:
 clean:
 	rm -f kryos
 
-.PHONY: build install test tidy clean
+check-scripts:
+	@diff -q internal/scripts/kryos-stress-test.sh scripts/kryos-stress-test.sh >/dev/null 2>&1 || \
+	  { echo "ERROR: scripts out of sync! Run: cp scripts/kryos-stress-test.sh internal/scripts/"; exit 1; }
+	@echo "✅ scripts are in sync"
+
+vet:
+	go vet ./...
+
+.PHONY: build install test tidy clean check-scripts vet

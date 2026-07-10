@@ -128,6 +128,12 @@ func ReadPWMEnable(path, pwm string) (int, error) {
 // WritePWM writes a 0-100 percentage duty cycle using truncation (not rounding).
 // This matches liquidctl's `duty * 255 // 100` for bit-exact parity.
 func WritePWM(path, pwm string, percent int) error {
+	if percent < 0 {
+		percent = 0
+	}
+	if percent > 100 {
+		percent = 100
+	}
 	pwmDuty := (percent * 255) / 100
 	return os.WriteFile(filepath.Join(path, pwm), []byte(strconv.Itoa(pwmDuty)), 0644)
 }

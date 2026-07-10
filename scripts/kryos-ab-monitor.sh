@@ -1,18 +1,18 @@
 #!/bin/bash
-# kryos-ab-monitor: captura states de bash y kryos dry-run cada N segundos.
-# Ejecutar como root. Output append-only a LOG (default: /var/log/kryos-ab.log)
+# kryos-ab-monitor: captures bash and kryos dry-run states every N seconds.
+# Run as root. Output is append-only to LOG (default: /var/log/kryos-ab.log)
 set -e
 LOG=${LOG:-/var/log/kryos-ab.log}
 INTERVAL="${INTERVAL:-10}"
 DURATION="${DURATION:-600}"
 
 if [ "$EUID" -ne 0 ]; then
-    echo "ERROR: ejecuta con sudo"
+    echo "ERROR: run with sudo"
     exit 1
 fi
 
 echo "timestamp,bash_pump,bash_fan,kryos_pump,kryos_fan,cpu_x1000,liquid_x1000" > "$LOG"
-echo "Monitor arrancado: $DURATION segundos, intervalo ${INTERVAL}s, log=$LOG" >&2
+echo "Monitor started: ${DURATION}s, interval ${INTERVAL}s, log=$LOG" >&2
 
 END=$(($(date +%s) + DURATION))
 while [ "$(date +%s)" -lt "$END" ]; do
@@ -25,4 +25,4 @@ while [ "$(date +%s)" -lt "$END" ]; do
     echo "$TS,$BASH,$KRYOS,$CPU,$LIQUID" >> "$LOG"
     sleep "$INTERVAL"
 done
-echo "Monitor terminado: $DURATION segundos capturados" >&2
+echo "Monitor finished: ${DURATION}s captured" >&2

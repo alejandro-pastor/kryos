@@ -144,7 +144,7 @@ kryos() {
     status) sudo /usr/local/bin/kryos --status ;;
     logs)   sudo journalctl -u kryos.service -n 15 --no-pager ;;
     watch)  watch -n 10 sudo /usr/local/bin/kryos --status ;;
-    test)   sudo /usr/local/bin/kryos-stress-test.sh ;;
+    test)   sudo /usr/local/bin/kryos-test ;;
     state)  sudo /usr/local/bin/kryos --get-state ;;
     help)
       echo "Usage: kryos <command>"
@@ -192,7 +192,7 @@ entirely opt-in.
 ## Run a stress test
 
 If you installed KryOs with `--install`, the stress test script is already
-at `/usr/local/bin/kryos-stress-test.sh`. With the alias function above:
+at `/usr/local/bin/kryos-test`. With the alias function above:
 
 ```bash
 kryos test

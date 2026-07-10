@@ -228,18 +228,23 @@ func runOnce(statePath string, dryRun, verbose bool) error {
 	}
 
 	if levels.Pump != prev.Pump {
+		prevPumpMode, _ := internal.ReadPWMEnable(krakenPath, "pwm1")
 		if err := internal.SetMode(krakenPath, "pwm1", 1); err != nil {
 			return fmt.Errorf("set pump mode: %w", err)
 		}
 		if err := internal.WritePWM(krakenPath, "pwm1", pumpPct); err != nil {
+			// Restore mode if write fails — avoid inconsistent state.
+			internal.SetMode(krakenPath, "pwm1", prevPumpMode)
 			return fmt.Errorf("write pump pwm: %w", err)
 		}
 	}
 	if levels.Fan != prev.Fan {
+		prevFanMode, _ := internal.ReadPWMEnable(krakenPath, "pwm2")
 		if err := internal.SetMode(krakenPath, "pwm2", 1); err != nil {
 			return fmt.Errorf("set fan mode: %w", err)
 		}
 		if err := internal.WritePWM(krakenPath, "pwm2", fanPct); err != nil {
+			internal.SetMode(krakenPath, "pwm2", prevFanMode)
 			return fmt.Errorf("write fan pwm: %w", err)
 		}
 	}

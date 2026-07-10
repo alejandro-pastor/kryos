@@ -28,6 +28,11 @@ func Load(path string) (Levels, error) {
 	if err1 != nil || err2 != nil {
 		return Levels{Pump: 0, Fan: 0}, nil
 	}
+	// Validate range: levels must be 0-4 (4 = emergency).
+	// Corrupt values would cause a panic when indexing duty arrays.
+	if pump < 0 || pump > 4 || fan < 0 || fan > 4 {
+		return Levels{Pump: 0, Fan: 0}, nil
+	}
 	return Levels{Pump: pump, Fan: fan}, nil
 }
 

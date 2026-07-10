@@ -1,16 +1,16 @@
 #!/bin/bash
-# kryos-ab-monitor-stress: captura SOLO durante stress test
+# kryos-ab-monitor-stress: captures states during stress test only
 set -e
 LOG=${LOG:-/var/log/kryos-ab-stress.log}
 DURATION="${DURATION:-280}"
 
 if [ "$EUID" -ne 0 ]; then
-    echo "ERROR: ejecuta con sudo"
+    echo "ERROR: run with sudo"
     exit 1
 fi
 
 echo "timestamp,bash_pump,bash_fan,kryos_pump,kryos_fan,cpu_x1000,liquid_x1000" > "$LOG"
-echo "Monitor stress arrancado: ${DURATION}s" >&2
+echo "Stress monitor started: ${DURATION}s" >&2
 
 END=$(($(date +%s) + DURATION))
 while [ "$(date +%s)" -lt "$END" ]; do
@@ -23,4 +23,4 @@ while [ "$(date +%s)" -lt "$END" ]; do
     echo "$TS,$BASH,$KRYOS,$CPU,$LIQUID" >> "$LOG"
     sleep 5
 done
-echo "Monitor stress terminado" >&2
+echo "Stress monitor finished" >&2
