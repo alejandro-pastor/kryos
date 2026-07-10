@@ -313,4 +313,9 @@ Scripts in `scripts/` are intended for development and testing:
 
 ## License
 
-GPL-3.0
+KryOs is licensed under the **GNU General Public License v3.0** (GPL-3.0).
+See the [LICENSE](LICENSE) file for the full text.
+
+As the sole author, I retain the right to offer alternative licensing terms
+if needed. If GPL-3.0 is incompatible with your use case, open an issue and
+we can discuss it.
